@@ -37,7 +37,7 @@ Example Playbook
   tags: provision
   vars:
     kvm_vm_hostname: "vm1.example.com"
-    kvm_vm_public_ip: 192.168.122.1
+    kvm_vm_public_ip: 192.168.122.10
     kvm_vm_root_pwd: "p@ssw0rd"
     kvm_vm_base_img: rhel-guest-image-7.qcow2
     kvm_vm_vcpus: "2"
