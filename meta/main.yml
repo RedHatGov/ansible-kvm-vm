@@ -1,0 +1,19 @@
+galaxy_info:
+  role_name: kvm-vm
+  author: Kevin Jones
+  description: >
+    Create a VM on a RHEL+KVM hypervisor
+  company: Red Hat
+  license: GPLv3
+  min_ansible_version: 2.6
+  platforms:
+    - name: EL
+      versions:
+        - 7
+  galaxy_tags:
+    - cloud
+    - kvm
+    - libvirt
+    - rhel
+
+dependencies: []

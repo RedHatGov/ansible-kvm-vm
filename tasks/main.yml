@@ -1,0 +1,58 @@
+---
+# tasks file for playbooks/roles/kvm-vm
+- name: Create operating system disk for vm
+  command: "qemu-img create -f qcow2 /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 {{ kvm_vm_os_disk_size }}"
+
+- name: Push base image onto vm operating system disk
+  command: "virt-resize --expand /dev/sda1 /var/lib/libvirt/images/{{ kvm_vm_base_img }} /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2"
+
+- name: Grow root file system to size of disk
+  command: "virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 --run-command 'xfs_growfs /'"
+
+#TODO: make the vm use a cloud-init iso instead
+- name: Set the root password for the vm and uninstall cloud-init
+  command: "virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 --root-password password:{{ kvm_vm_root_pwd }} --uninstall cloud-init"
+
+- name: Create the ifcfg files for vm
+  template:
+    src: ifcfg.j2
+    dest: files/{{ kvm_vm_hostname }}-ifcfg-{{ item.name}}
+  delegate_to: localhost
+  loop: "{{ kvm_vm_nics }}"
+
+- name: Ensure individual dirs exist for vm ifcfg files
+  file:
+    path: "/tmp/{{ kvm_vm_hostname }}"
+    state: directory
+
+- name: Copy over the ifcfg files for the vm
+  copy:
+    src: files/{{ kvm_vm_hostname }}-ifcfg-{{ item.name}}
+    dest: "/tmp/{{ kvm_vm_hostname }}/ifcfg-{{ item.name }}"
+  loop: "{{ kvm_vm_nics }}"
+
+- name: Copy ifcfg files into vm operating disk
+  command: "virt-copy-in -a /var/lib/libvirt/images/{{ kvm_vm_hostname }}.qcow2 /tmp/{{ kvm_vm_hostname }}/ifcfg-{{ item.name }} /etc/sysconfig/network-scripts/"
+  loop: "{{ kvm_vm_nics }}"
+
+- name: Create xml for vm
+  command: "virt-install --ram {{ kvm_vm_ram }} --vcpus {{ kvm_vm_vcpus }} --os-variant rhel7 --disk path=/var/lib/libvirt/images/{{ kvm_vm_hostname }}.qcow2,device=disk,bus=virtio,format=qcow2 --network none --noautoconsole --vnc --name {{ kvm_vm_hostname }} --cpu host-model --autostart --dry-run --print-xml"
+  register: vm_xml_content
+
+- debug:
+    msg: "{{ vm_xml_content }}"
+
+- name: Define vm
+  become: yes
+  virt:
+    name: "{{ kvm_vm_hostname }}"
+    command: define
+    xml: "{{ vm_xml_content.stdout }}"
+    uri: qemu:///system
+
+- name: Start up vm
+  command: "virsh start {{ kvm_vm_hostname }}"
+
+- name: Attach network interfaces for vm
+  command: "virsh attach-interface {{ kvm_vm_hostname }} {{ item.config }} --live --persistent"
+  loop: "{{ kvm_vm_nics }}"
