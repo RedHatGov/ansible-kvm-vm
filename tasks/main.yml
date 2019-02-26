@@ -2,19 +2,27 @@
 # tasks file for playbooks/roles/kvm-vm
 - name: Create operating system disk for vm
   command: "qemu-img create -f qcow2 /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 {{ kvm_vm_os_disk_size }}"
+  register: os_disk_results
+  changed_when: '"Formatting" in os_disk_results.stdout'
 
 - name: Push base image onto vm operating system disk
   command: >
     virt-resize --expand /dev/sda1 /var/lib/libvirt/images/{{ kvm_vm_base_img }}
-    /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2"
+    /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
+  register: resize_os_disk_results
+  changed_when: '"Resize operation completed with no errors" in resize_os_disk_results.stdout'
 
 - name: Grow root file system to size of disk
   command: "virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 --run-command 'xfs_growfs /'"
+  register: grow_os_disk_results
+  changed_when: '"Finishing off" in grow_os_disk_results.stdout'
 
 - name: Set the root password for the vm and uninstall cloud-init
   command: > 
     virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
     --root-password password:{{ kvm_vm_root_pwd }} --uninstall cloud-init"
+  register: mod_os_disk_results
+  changed_when: '"Finishing off" in mod_os_disk_results.stdout'
 
 - name: Create the ifcfg files for vm
   template:
@@ -39,6 +47,7 @@
     virt-copy-in -a /var/lib/libvirt/images/{{ kvm_vm_hostname }}.qcow2
     /tmp/{{ kvm_vm_hostname }}/ifcfg-{{ item.name }} /etc/sysconfig/network-scripts/
   loop: "{{ kvm_vm_nics }}"
+  changed_when: false
 
 - name: Create xml for vm
   command: >
@@ -46,9 +55,7 @@
     --disk path=/var/lib/libvirt/images/{{ kvm_vm_hostname }}.qcow2,device=disk,bus=virtio,format=qcow2
     --network none --noautoconsole --vnc --name {{ kvm_vm_hostname }} --cpu host-model --autostart --dry-run --print-xml
   register: vm_xml_content
-
-- debug:
-    msg: "{{ vm_xml_content }}"
+  changed_when: false
 
 - name: Define vm
   become: yes
@@ -60,7 +67,10 @@
 
 - name: Start up vm
   command: "virsh start {{ kvm_vm_hostname }}"
+  register: virsh_start_results
+  changed_when: '"started" in virsh_start_results.stdout'
 
 - name: Attach network interfaces for vm
   command: "virsh attach-interface {{ kvm_vm_hostname }} {{ item.config }} --live --persistent"
   loop: "{{ kvm_vm_nics }}"
+  changed_when: false
