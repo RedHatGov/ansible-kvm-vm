@@ -19,7 +19,7 @@
 - name: Create the ifcfg files for vm
   template:
     src: ifcfg.j2
-    dest: files/{{ kvm_vm_hostname }}-ifcfg-{{ item.name}}
+    dest: files/{{ kvm_vm_hostname }}-ifcfg-{{ item.name }}
   delegate_to: localhost
   loop: "{{ kvm_vm_nics }}"
 
@@ -30,7 +30,7 @@
 
 - name: Copy over the ifcfg files for the vm
   copy:
-    src: files/{{ kvm_vm_hostname }}-ifcfg-{{ item.name}}
+    src: files/{{ kvm_vm_hostname }}-ifcfg-{{ item.name }}
     dest: "/tmp/{{ kvm_vm_hostname }}/ifcfg-{{ item.name }}"
   loop: "{{ kvm_vm_nics }}"
 
