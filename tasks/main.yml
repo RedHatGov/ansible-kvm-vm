@@ -20,7 +20,7 @@
 - name: Set the root password for the vm and uninstall cloud-init
   command: > 
     virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
-    --root-password password:{{ kvm_vm_root_pwd }} --uninstall cloud-init"
+    --root-password password:{{ kvm_vm_root_pwd }} --uninstall cloud-init
   register: mod_os_disk_results
   changed_when: '"Finishing off" in mod_os_disk_results.stdout'
 
