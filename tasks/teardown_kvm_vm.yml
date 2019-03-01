@@ -1,0 +1,11 @@
+---
+# tasks file for playbooks/roles/kvm-vm
+- name: Destroy vm
+  command: "virsh destroy {{ kvm_vm_hostname }}"
+  register: virsh_destroy_results
+  changed_when: '"destroyed" in virsh_destroy_results.stdout'
+
+- name: Undefine vm
+  command: "virsh undefine {{ kvm_vm_hostname }}"
+  register: virsh_undefine_results
+  changed_when: '"undefined" in virsh_undefine_results.stdout'
