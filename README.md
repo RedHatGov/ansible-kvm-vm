@@ -56,7 +56,7 @@ Example Playbook
   tasks:
     - name: Create KVM VM
       include_role:
-        name: redhatgov.kvm-vm
+        name: RedHatGov.kvm-vm
 ```
 
 License
