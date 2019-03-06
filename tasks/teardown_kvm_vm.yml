@@ -4,6 +4,7 @@
   command: "virsh destroy {{ kvm_vm_hostname }}"
   register: virsh_destroy_results
   changed_when: '"destroyed" in virsh_destroy_results.stdout'
+  ignore_errors: true
 
 - name: Undefine vm
   command: "virsh undefine {{ kvm_vm_hostname }}"
