@@ -10,3 +10,8 @@
   command: "virsh undefine {{ kvm_vm_hostname }}"
   register: virsh_undefine_results
   changed_when: '"undefined" in virsh_undefine_results.stdout'
+
+- name: Delete the vm operating system disk
+  file:
+    state: absent
+    path: /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
