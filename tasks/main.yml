@@ -1,5 +1,15 @@
 ---
 # tasks file for playbooks/roles/kvm-vm
+- name: Check if operating system disk already exists
+  stat:
+    path: /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
+  register: os_disk_file
+
+- name: fail if operating system disk already exists
+  fail:
+    msg: "An operating system disk already exists at /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2"
+  when: os_disk_file.stat.exists
+
 - name: Create operating system disk for vm
   command: "qemu-img create -f qcow2 /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 {{ kvm_vm_os_disk_size }}"
   register: os_disk_results
