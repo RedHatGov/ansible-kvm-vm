@@ -63,12 +63,6 @@
   loop: "{{ kvm_vm_nics }}"
   changed_when: false
 
-- name: Update selinux settings on ifcfg files
-  command: "virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 --run-command 'semanage fcontext -a -t net_conf_t /etc/sysconfig/network-scripts/ifcfg-{{ item.name }} && restorecon -R /etc/sysconfig/network-scripts/ifcfg-*'"
-  register: grow_os_disk_results
-  loop: "{{ kvm_vm_nics }}"
-  changed_when: '"Finishing off" in grow_os_disk_results.stdout'
-
 - name: Create xml for vm
   command: >
     virt-install --ram {{ kvm_vm_ram }} --vcpus {{ kvm_vm_vcpus }} --os-variant rhel7
