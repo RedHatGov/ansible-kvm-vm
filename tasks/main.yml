@@ -25,9 +25,18 @@
     /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
   register: resize_os_disk_results
   changed_when: '"Resize operation completed with no errors" in resize_os_disk_results.stdout'
+  
+- name: Download libguestfs appliance to work around RHEL 7 host/RHEL 8 guest XFS incompatibility
+  unarchive:
+    src:  http://download.libguestfs.org/binaries/appliance/appliance-1.40.1.tar.xz
+    dest: /tmp
+    creates: /tmp/appliance
+    remote_src: yes
 
 - name: Grow root file system to size of disk
   command: "virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 --run-command 'xfs_growfs /'"
+  environment:
+    LIBGUESTFS_PATH: /tmp/appliance
   register: grow_os_disk_results
   changed_when: '"Finishing off" in grow_os_disk_results.stdout'
 
@@ -35,6 +44,8 @@
   command: > 
     virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
     --root-password password:{{ kvm_vm_root_pwd }} --uninstall cloud-init
+  environment:
+    LIBGUESTFS_PATH: /tmp/appliance
   register: mod_os_disk_results
   changed_when: '"Finishing off" in mod_os_disk_results.stdout'
 
@@ -60,6 +71,8 @@
   command: >
     virt-copy-in -a /var/lib/libvirt/images/{{ kvm_vm_hostname }}.qcow2
     /tmp/{{ kvm_vm_hostname }}/ifcfg-{{ item.name }} /etc/sysconfig/network-scripts/
+  environment:
+    LIBGUESTFS_PATH: /tmp/appliance
   loop: "{{ kvm_vm_nics }}"
   changed_when: false
 
