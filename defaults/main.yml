@@ -9,3 +9,4 @@ kvm_vm_ram: "1024"
 kvm_vm_os_disk_name: "{{ kvm_vm_hostname }}"
 kvm_vm_os_disk_size: "10G"
 kvm_vm_nics: [] #NOTE: see example playbook for structure
+kvm_vm_os_disk_path: "/var/lib/libvirt/images"
