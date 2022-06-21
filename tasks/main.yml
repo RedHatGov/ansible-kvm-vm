@@ -2,7 +2,7 @@
 # tasks file for playbooks/roles/kvm-vm
 - name: Check if operating system disk already exists
   stat:
-    path: /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
+    path: "{{ kvm_vm_os_disk_path }}/{{ kvm_vm_os_disk_name }}.qcow2"
     get_checksum: no
     get_md5: no
     get_mime: no
@@ -11,11 +11,11 @@
 
 - name: fail if operating system disk already exists
   fail:
-    msg: "An operating system disk already exists at /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2"
+    msg: "An operating system disk already exists at {{ kvm_vm_os_disk_path }}/{{ kvm_vm_os_disk_name }}.qcow2"
   when: os_disk_file.stat.exists
 
 - name: Create operating system disk for vm
-  command: "qemu-img create -f qcow2 /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 {{ kvm_vm_os_disk_size }}"
+  command: "qemu-img create -f qcow2 {{ kvm_vm_os_disk_path }}/{{ kvm_vm_os_disk_name }}.qcow2 {{ kvm_vm_os_disk_size }}"
   register: os_disk_results
   changed_when: '"Formatting" in os_disk_results.stdout'
 
@@ -34,7 +34,7 @@
     remote_src: yes
 
 - name: Grow root file system to size of disk
-  command: "virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2 --run-command 'xfs_growfs /'"
+  command: "virt-customize -a {{ kvm_vm_os_disk_path }}/{{ kvm_vm_os_disk_name }}.qcow2 --run-command 'xfs_growfs /'"
   environment:
     LIBGUESTFS_PATH: /tmp/appliance
   register: grow_os_disk_results
@@ -42,7 +42,7 @@
 
 - name: Set the root password for the vm and uninstall cloud-init
   command: > 
-    virt-customize -a /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
+    virt-customize -a {{ kvm_vm_os_disk_path }}/{{ kvm_vm_os_disk_name }}.qcow2
     --root-password password:{{ kvm_vm_root_pwd }} --uninstall cloud-init
   environment:
     LIBGUESTFS_PATH: /tmp/appliance
@@ -69,7 +69,7 @@
 
 - name: Copy ifcfg files into vm operating disk
   command: >
-    virt-copy-in -a /var/lib/libvirt/images/{{ kvm_vm_hostname }}.qcow2
+    virt-copy-in -a {{ kvm_vm_os_disk_path }}/{{ kvm_vm_hostname }}.qcow2
     /tmp/{{ kvm_vm_hostname }}/ifcfg-{{ item.name }} /etc/sysconfig/network-scripts/
   environment:
     LIBGUESTFS_PATH: /tmp/appliance
@@ -79,7 +79,7 @@
 - name: Create xml for vm
   command: >
     virt-install --ram {{ kvm_vm_ram }} --vcpus {{ kvm_vm_vcpus }} --os-variant rhel7
-    --disk path=/var/lib/libvirt/images/{{ kvm_vm_hostname }}.qcow2,device=disk,bus=virtio
+    --disk path={{ kvm_vm_os_disk_path }}/{{ kvm_vm_hostname }}.qcow2,device=disk,bus=virtio
     --network none --noautoconsole --vnc --name {{ kvm_vm_hostname }} --cpu host-model --autostart --dry-run --print-xml
   register: vm_xml_content
   changed_when: false

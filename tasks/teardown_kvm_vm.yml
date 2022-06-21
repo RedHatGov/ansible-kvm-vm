@@ -14,4 +14,4 @@
 - name: Delete the vm operating system disk
   file:
     state: absent
-    path: /var/lib/libvirt/images/{{ kvm_vm_os_disk_name }}.qcow2
+    path: "{{ kvm_vm_os_disk_path }}/{{ kvm_vm_os_disk_name }}.qcow2"
